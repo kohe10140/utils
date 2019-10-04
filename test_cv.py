@@ -10,7 +10,7 @@ from ml.cross_validation import KFoldCV
 
 if __name__ == "__main__":
     
-    sys.path.append('/home/nishi/research/utils')
+    sys.path.append('/home/nishi/tools/machine_learning/utils')
 
     boston = load_boston() 
     boston_df = pd.DataFrame(boston.data, columns = boston.feature_names)
@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     rg = Ridge(solver='auto')
     X = boston_df[['RM']].values
-    Y = boston_df['MEDV'].values
+    Y = boston_df[['MEDV']].values
 
     param_grid = {'alpha': [0.01, 0.1]}
 
