@@ -4,13 +4,14 @@ from tqdm import tqdm, tqdm_notebook
 
 class KFoldCV:
 
-    def __init__(self, estimator, k_splits, param_grid, cv, scoring=None, 
+    def __init__(self, estimator, k_splits, param_grid, cv, scoring=None, iid=False,
                  verbose=False, n_jobs=None, return_train_score=False, random_state=0):
         self.estimator = estimator
         self.k_splits = k_splits
         self.param_grid = param_grid
         self.cv = cv
         self.scoring = scoring
+        self.iid = iid
         self.verbose = verbose
         self.n_jobs = n_jobs
         self.return_train_score = return_train_score
@@ -21,12 +22,12 @@ class KFoldCV:
         if notebook:
             pb = tqdm_notebook
         else:
-            pd = tqdm
+            pb = tqdm
 
         kf = KFold(n_splits=self.k_splits, random_state=self.random_state) 
         scores = []
 
-        for train_index, valid_index in pd(kf.split(X)):
+        for train_index, valid_index in pb(kf.split(X)):
             X_train, X_valid = X[train_index], y[valid_index]
             y_train, y_valid = y[train_index], y[valid_index]
 
@@ -39,8 +40,3 @@ class KFoldCV:
             scores.append(score)
         
         return scores
-            
-            
-            
-            
-            
