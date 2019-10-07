@@ -28,7 +28,7 @@ class KFoldCV:
         scores = []
 
         for train_index, valid_index in pb(kf.split(X)):
-            X_train, X_valid = X[train_index], y[valid_index]
+            X_train, X_valid = X[train_index], X[valid_index]
             y_train, y_valid = y[train_index], y[valid_index]
 
             self.clf = GridSearchCV(estimator=self.estimator, param_grid=self.param_grid,
