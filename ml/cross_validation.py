@@ -19,15 +19,45 @@ class KFoldCV:
 
 
     def get_score(self, X, y, notebook=False):
+        """
+        K-fold validation to evaluate the models
+
+        Parameters
+        ----------
+        X : numpy.array
+            Features
+        y : numpy.array
+            Objective variables
+        notebook : bool, optional
+            When you use this method on jupyter notebook,
+            this should be Ture, by default False
+        
+        Returns
+        -------
+        list of float
+            The list of scores of each fold 
+        
+        Attributes
+        ----------
+        scores : list of float
+        best_estimators : list of estimator
+        train_indexes : list
+        valid_indexes : list
+        """
         if notebook:
             pb = tqdm_notebook
         else:
             pb = tqdm
 
         kf = KFold(n_splits=self.k_splits, random_state=self.random_state) 
-        scores = []
+        self.scores = []
+        self.best_estimators = []
+        self.train_indexes = []
+        self.valid_indexes = []
 
         for train_index, valid_index in pb(kf.split(X)):
+            self.train_indexes.append(train_index)
+            self.valid_indexes.append(valid_index)
             X_train, X_valid = X[train_index], X[valid_index]
             y_train, y_valid = y[train_index], y[valid_index]
 
@@ -37,6 +67,7 @@ class KFoldCV:
             self.clf.fit(X_train, y_train)
             best_estimator = self.clf.best_estimator_ 
             score = best_estimator.score(X_valid, y_valid)
-            scores.append(score)
+            self.best_estimators.append(best_estimator)
+            self.scores.append(score)
         
-        return scores
+        return self.scores
