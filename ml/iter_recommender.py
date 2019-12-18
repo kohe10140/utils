@@ -22,8 +22,10 @@ class Iterative:
         self.y = y
 
 
-    def learning(self, param_grid, X, y, n_jobs=-1, verbose=3):
+    def learning(self, param_grid, X, y, n_jobs=-1, verbose=3, cv=5):
         self.param_grid = param_grid
+        self.n_jobs = n_jobs
+        self.cv= cv
         self.gs = GridSearchCV(self.estimator, param_grid, n_jobs=n_jobs, verbose=verbose)
         self.gs.fit(X, y)
         self.learned_model = self.gs.best_estimator_
@@ -154,3 +156,16 @@ class Iterative:
 
     def _intact(self, x):
         return x
+
+
+    def count(self, n_initial, initial_index, random_state,
+              top_n, eval_criteria, retune, param_grid):
+        train_X, train_y, exploration_X, exploration_y = self.initial_data(n_initial, initial_index, random_state)
+        best_estimator = self.learned_model(param_grid, X=train_X, y=train_y)
+
+        for i in range(top_n):
+            pred_y = best_estimator.predict(train_X)
+            top_score_index = self.get_top_index(top_n, pred_y, eval_criteria)
+            train_X, train_X = self.parse_data(train_X, top_score_index, exploration_X, stacking='v')
+            train_y, train_y = self.parse_data(train_y, top_score_index, exploration_y, stacking='h')
+            
