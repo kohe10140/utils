@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.model_selection import GridSearchCV
 
 
 class Iterative:
@@ -21,15 +22,20 @@ class Iterative:
         self.y = y
 
 
-    def learning(self):
-        return learned_model
+    def learning(self, param_grid, X, y, n_jobs=-1, verbose=3):
+        self.param_grid = param_grid
+        self.gs = GridSearchCV(self.estimator, param_grid, n_jobs=n_jobs, verbose=verbose)
+        self.gs.fit(X, y)
+        self.learned_model = self.gs.best_estimator_
+        return self.learned_model
 
 
-    def predict(self):
-        return prediction
+    def predict(self, pred_X):
+        pred_y = self.learned_model.predict(pred_X)
+        return pred_X, pred_y
 
 
-    def get_top_index(self, top_n, pred, eval_criteria=self._intact):
+    def get_top_index(self, top_n, pred, eval_criteria=False):
         """
         To get the indexes of data whose top nth predictions 
         
@@ -57,8 +63,16 @@ class Iterative:
         self.pred = pred
         self.top_n = top_n
         self.eval_criteria = eval_criteria
+
+        if not eval_criteria:
+            eval_criteria = self._intact
         self.pred_criteria = np.array([eval_criteria(data) for data in pred])
-        self.top_score_index = np.argpartition(-self.pred_criteria, top_n)[:top_n]
+
+        if top_n < len(self.pred_criteria):
+            self.top_score_index = np.argpartition(-self.pred_criteria, top_n)[:top_n]
+        else:
+            self.top_score_index = np.arange(len(self.pred_criteria))
+
         return self.top_score_index
 
 
@@ -95,18 +109,18 @@ class Iterative:
         ValueError
         """
         if stacking == 'v':
-            updated_data = np.vstack([exist_data, exploration_data[add_index]]) 
+            updated_exist = np.vstack([exist_data, exploration_data[add_index]]) 
             updated_exploration = np.delete(exploration_data, add_index, axis=0)
         elif stacking == 'h':
-            updated_data = np.hstack([exist_data, exploration_data[add_index]]) 
+            updated_exist = np.hstack([exist_data, exploration_data[add_index]]) 
             updated_exploration = np.delete(exploration_data, add_index, axis=0)
         else:
             raise ValueError
          
-        return updatad_exist, updated_exploration
+        return updated_exist, updated_exploration
 
 
-    def initial_data(self, n_initial, initial_index='random'):
+    def initial_data(self, n_initial, initial_indexes='random', random_state=0):
         """
         
         Parameters
@@ -120,19 +134,20 @@ class Iterative:
         -------
         The initial data of training(exist) data and exploration data
         """
-        self.initial_index = initial_index
+        np.random.random_state(random_state)
+        self.initial_indexes = initial_indexes
         self.n_initial = n_initial
 
-        if initial_indexes = 'random':
+        if initial_indexes == 'random':
             initial_indexes = np.random.choice(np.arange(len(self.y)), self.n_initial)
 
-        self.train_X = X[initial_indexes]
-        self.train_y = X[initial_indexes]
+        self.train_X = self.X[initial_indexes]
+        self.train_y = self.y[initial_indexes]
 
         ind = np.ones(len(self.y), dtype=bool)
         ind[initial_indexes] = False
-        self.exploration_X = X[ind]
-        self.exploration_y = X[ind]
+        self.exploration_X = self.X[ind]
+        self.exploration_y = self.y[ind]
 
         return self.train_X, self.train_y, self.exploration_X, self.exploration_y
 
