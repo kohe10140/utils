@@ -1,5 +1,9 @@
+import os
+
+import joblib
 import numpy as np
 from sklearn.model_selection import GridSearchCV
+import pandas as pd
 
 
 class Iterative:
@@ -37,7 +41,7 @@ class Iterative:
         return pred_X, pred_y
 
 
-    def get_top_index(self, top_n, pred, eval_criteria=False):
+    def get_top_index(self, top_n, pred, exploration_X, eval_criteria=False):
         """
         To get the indexes of data whose top nth predictions 
         
@@ -48,15 +52,13 @@ class Iterative:
 
         pred : array-like of shape (n_prediction)
             Predictions in the exploration space 
+        
+        exploration_X : array-like of shape (n_samples, n_features)
+            features in the exploration space
 
         eval_criteria : function, optional
             The criteria to evaluate the predicted data, by default self._intact
         
-        Attributes
-        ----------
-        pred_criteria : numpy array
-            The array of transformed scores to evaluate
-
         Returns
         -------
         numpy array of shape (n_top) 
@@ -68,13 +70,8 @@ class Iterative:
 
         if not eval_criteria:
             eval_criteria = self._intact
-        self.pred_criteria = np.array([eval_criteria(data) for data in pred])
-
-        if top_n < len(self.pred_criteria):
-            self.top_score_index = np.argpartition(-self.pred_criteria, top_n)[:top_n]
-        else:
-            self.top_score_index = np.arange(len(self.pred_criteria))
-
+        
+        self.top_score_index = eval_criteria(pred, top_n, exploration_X)
         return self.top_score_index
 
 
@@ -85,7 +82,7 @@ class Iterative:
 
         Parameters
         ----------
-        exist_data : numpy array of shape(n_samples, n_features) or (n_samples)            The data to train.
+        exist_data : numpy array of shape(n_samples, n_features) or (n_samples)  
             The data to train
 
         add_index : int or numpy array
@@ -136,7 +133,7 @@ class Iterative:
         -------
         The initial data of training(exist) data and exploration data
         """
-        np.random.random_state(random_state)
+        np.random.seed(random_state)
         self.initial_indexes = initial_indexes
         self.n_initial = n_initial
 
@@ -154,18 +151,57 @@ class Iterative:
         return self.train_X, self.train_y, self.exploration_X, self.exploration_y
 
 
-    def _intact(self, x):
-        return x
+    def _intact(self, y, top_n, x):
+
+        if top_n < len(y):
+            index = np.argpartition(-y, top_n)[:top_n]
+        else:
+            index = np.arange(len(y))
+        return index 
 
 
-    def count(self, n_initial, initial_index, random_state,
-              top_n, eval_criteria, retune, param_grid):
-        train_X, train_y, exploration_X, exploration_y = self.initial_data(n_initial, initial_index, random_state)
-        best_estimator = self.learned_model(param_grid, X=train_X, y=train_y)
+    def iter_recommend(self, n_initial, random_state,
+                       param_grid, save_path, top_n,
+                       initial_indexes='random',
+                       eval_criteria=False, retune=False):
+        """
+        Recommend and output the result
+
+        Parameters
+        ----------
+        save_path : str
+            The parent directory path of output files
+        """
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
+        estimators = []
+
+        # Extract initial data
+        self.train_X, self.train_y, self.exploration_X, self.exploration_y = self.initial_data(n_initial, initial_indexes, random_state)
+        self.best_estimator = self.learning(param_grid, X=self.train_X, y=self.train_y)
+
+        rec_output = os.path.join(save_path, 'train'+'0'+'.cmp')
+        df = pd.DataFrame(self.train_X)
+        df['y'] = self.train_y
+        df.to_csv(rec_output)
 
         for i in range(top_n):
-            pred_y = best_estimator.predict(train_X)
-            top_score_index = self.get_top_index(top_n, pred_y, eval_criteria)
-            train_X, train_X = self.parse_data(train_X, top_score_index, exploration_X, stacking='v')
-            train_y, train_y = self.parse_data(train_y, top_score_index, exploration_y, stacking='h')
+            # Recommend iteratively
+            pred_y = self.best_estimator.predict(self.exploration_X)
+            self.top_score_index = self.get_top_index(top_n, pred_y, self.exploration_X, eval_criteria)
+            self.train_X, self.exploration_X = self.parse_data(self.train_X, self.top_score_index, self.exploration_X, stacking='v')
+            self.train_y, self.exploration_y = self.parse_data(self.train_y, self.top_score_index, self.exploration_y, stacking='h')
+
+            # Save the used estimator and recommended data
+            estimators.append(self.best_estimator)
+            rec_output = os.path.join(save_path, 'train'+str(i+1)+'.cmp')
+            df = pd.DataFrame(self.train_X)
+            df['y'] = self.train_y
+            df.to_csv(rec_output)
+
+            if retune:
+                self.best_estimator = self.learning(param_grid, X=self.train_X, y=self.train_y)
             
+        est_output = os.path.join(save_path, 'estimators.cmp')
+        joblib.dump(estimators, est_output, 3)
+        return estimators
