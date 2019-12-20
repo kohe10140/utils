@@ -47,12 +47,13 @@ def check_double(entry1, entry2):
     >>> check_double(entry1, entry2)
     True
     """
-    sym = (entry1[0]==entry2[1]) and \
-          (entry1[1]==entry2[0]) and \
-          (entry1[2]==entry2[2]) and \
-          ratio_sym(entry1[-1], entry2[-1])
+    #import pdb; pdb.set_trace()
+    sym = entry1[0]==entry2[1] and \
+          entry1[1]==entry2[0] and \
+          entry1[2]==entry2[2] and \
+          ratio_sym(entry1[3], entry2[3])
 
-    ide = entry1 == entry2
+    ide = all(entry1==entry2)
 
     if sym or ide:
         return True
@@ -60,14 +61,14 @@ def check_double(entry1, entry2):
         return False
 
 
-def identical2mean(data, pred):
+def identical2mean(X, y):
     """
     Parameter
     ---------
-    data : array-like (n_samples, n_features)
+    X : array-like (n_samples, n_features)
         The array to be unique
 
-    pred : array-like of shape (n_predictions)
+    y : array-like of shape (n_predictions)
         The array of the predictions
 
     criteria : function
@@ -81,7 +82,7 @@ def identical2mean(data, pred):
     for entry in X:
         temp_index = []
         for i in range(len(X)):
-            if check_double(entry, i):
+            if check_double(entry, X[i]):
                 temp_index.append(i)
         y[temp_index] = np.mean(y[temp_index])
 
@@ -106,15 +107,15 @@ def unique(data, pred, criteria=check_double):
     ------
     unique_data : numpy array
     """
-    unique_X = data[0]
-    unipue_y = pred
+    unique_X = data[0][np.newaxis, :]
+    unique_y = pred[0]
     for i in range(len(data)):
         for j in unique_X:
             if check_double(data[i], j):
                 break
         else:
-            np.vstack([unique_X, data[i])
-            np.hstack([unique_y, pred[i])
+            unique_X = np.vstack([unique_X, data[i]])
+            unique_y = np.hstack([unique_y, pred[i]])
     return unique_X, unique_y
 
 
@@ -146,7 +147,7 @@ def get_top(X, y, top_n):
     top_n_index = []
     for entry in X[index]:
         for i in range(len(X)):
-            if check_double(entry, i):
+            if check_double(entry, X[i]):
                 top_n_index.append(i)
 
     return np.array(top_n_index)
