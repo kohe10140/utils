@@ -60,6 +60,35 @@ def check_double(entry1, entry2):
         return False
 
 
+def identical2mean(data, pred):
+    """
+    Parameter
+    ---------
+    data : array-like (n_samples, n_features)
+        The array to be unique
+
+    pred : array-like of shape (n_predictions)
+        The array of the predictions
+
+    criteria : function
+        The criteria that evaluates whether the two entries are identical.
+
+    Return
+    ------
+    i_mean : numpy array
+        pred to be taken mean in the identical data
+    """
+    for entry in X:
+        temp_index = []
+        for i in range(len(X)):
+            if check_double(entry, i):
+                temp_index.append(i)
+        y[temp_index] = np.mean(y[temp_index])
+
+    i_mean = y
+    return i_mean
+
+
 def unique(data, pred, criteria=check_double):
     """
     Parameter
@@ -105,8 +134,8 @@ def get_top(X, y, top_n):
     ------
     numpy array
         The top nth index considered symmetory
-
     """
+    
     data = np.hstack([X, y[:, np.newaxis]])
 
     if top_n < len(X):
