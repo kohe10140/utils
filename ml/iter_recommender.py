@@ -58,7 +58,22 @@ class Iterative:
 
         eval_criteria : function, optional
             The criteria to evaluate the predicted data, by default self._intact
-        
+            The argument of this function must be (y, top_n, X)
+            Parameters
+            ----------
+            y : array-like of shape (n_predictions)
+                The array of predictions
+
+            top_n : int
+                
+            X : array-like of shape (n_samples, n_features)
+                The array of features
+
+            Returns
+            -------
+            top_score_index : numpy array
+                The index of top nth score 
+
         Returns
         -------
         numpy array of shape (n_top) 
@@ -151,7 +166,7 @@ class Iterative:
         return self.train_X, self.train_y, self.exploration_X, self.exploration_y
 
 
-    def _intact(self, y, top_n, x):
+    def _intact(self, y, top_n, X):
 
         if top_n < len(y):
             index = np.argpartition(-y, top_n)[:top_n]

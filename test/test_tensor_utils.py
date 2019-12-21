@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from ml.tensor_utils import identical2mean, unique, get_top
+from ml.tensor_utils import identical2mean, unique, get_top, sym_mean
 
 
 X = np.array([['A', 'B', 500, '1:2'], #0
@@ -20,6 +20,7 @@ X = np.array([['A', 'B', 500, '1:2'], #0
 
 y = np.arange(len(X)).astype(float)
 y_ = np.arange(len(X)).astype(float)
+y__ = np.arange(len(X)).astype(float)
 
 
 class TestTensorUtils(unittest.TestCase):
@@ -51,6 +52,14 @@ class TestTensorUtils(unittest.TestCase):
         unique_X, unique_y = unique(data=X, pred=y_)
         e_top = get_top(unique_X, unique_y, 3)
         a_top = np.array([3, 5, 4])
+        np.testing.assert_array_equal(a_top, e_top)
+        
+
+    def test_sym_mean(self):
+        i_mean_y__ = identical2mean(X, y__)
+        unique_X, unique_y = unique(data=X, pred=i_mean_y__)
+        e_top = get_top(unique_X, unique_y, 3)
+        a_top = sym_mean(y=unique_y, top_n=3, X=unique_X)
         np.testing.assert_array_equal(a_top, e_top)
 
 

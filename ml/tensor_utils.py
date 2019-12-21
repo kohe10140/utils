@@ -136,9 +136,6 @@ def get_top(X, y, top_n):
     numpy array
         The top nth index considered symmetory
     """
-    
-    data = np.hstack([X, y[:, np.newaxis]])
-
     if top_n < len(X):
         index = np.argpartition(-y, top_n)[:top_n]
     else:
@@ -151,3 +148,11 @@ def get_top(X, y, top_n):
                 top_n_index.append(i)
 
     return np.array(top_n_index)
+
+
+def sym_mean(y, top_n, X):
+    i_mean_y = identical2mean(X, y)
+    unique_X, unique_y = unique(X, i_mean_y)
+    top_n_index = get_top(unique_X, unique_y, top_n)
+    return top_n_index
+
