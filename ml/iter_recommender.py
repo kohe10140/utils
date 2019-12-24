@@ -122,6 +122,7 @@ class Iterative:
         ------
         ValueError
         """
+        add_index = add_index.astype(int)
         if stacking == 'v':
             updated_exist = np.vstack([exist_data, exploration_data[add_index]]) 
             updated_exploration = np.delete(exploration_data, add_index, axis=0)
@@ -153,15 +154,17 @@ class Iterative:
         self.n_initial = n_initial
 
         if initial_indexes == 'random':
-            initial_indexes = np.random.choice(np.arange(len(self.y)), self.n_initial)
+            self.initial_indexes = np.random.choice(np.arange(int(len(self.y)/2)),
+                                                    self.n_initial,
+                                                    replace=False)
 
-        self.train_X = self.X[initial_indexes]
-        self.train_y = self.y[initial_indexes]
+        self.train_X = self.X[self.initial_indexes]
+        self.train_y = self.y[self.initial_indexes]
 
-        ind = np.ones(len(self.y), dtype=bool)
-        ind[initial_indexes] = False
-        self.exploration_X = self.X[ind]
-        self.exploration_y = self.y[ind]
+        #ind = np.ones(len(self.y), dtype=bool)
+        #ind[self.initial_indexes] = False
+        self.exploration_X = np.delete(self.X, self.initial_indexes, axis=0)#self.X[ind]
+        self.exploration_y = np.delete(self.y, self.initial_indexes, axis=0)#self.y[ind]
 
         return self.train_X, self.train_y, self.exploration_X, self.exploration_y
 
@@ -175,9 +178,10 @@ class Iterative:
         return index 
 
 
+## EXAMPLE OF ITERATIVE RECOMENDATION ####################
     def iter_recommend(self, n_initial, random_state,
                        param_grid, save_path, top_n,
-                       initial_indexes='random',
+                       initial_indexes='random', n_jobs=-1,
                        eval_criteria=False, retune=False):
         """
         Recommend and output the result
