@@ -154,15 +154,21 @@ class Iterative:
         self.n_initial = n_initial
 
         if initial_indexes == 'random':
+            self.initial_indexes = np.random.choice(np.arange(len(self.y)),
+                                                    self.n_initial,
+                                                    replace=False)
+        elif initial_indexes == 'sym_random':
             self.initial_indexes = np.random.choice(np.arange(int(len(self.y)/2)),
                                                     self.n_initial,
                                                     replace=False)
+            sym_indexes = self.initial_indexes + np.full(len(self.initial_indexes), int(len(self.y)/2))
+            self.initial_indexes = np.hstack([self.initial_indexes, sym_indexes]).astype(int)
+        else:
+            self.initial_indexes = initial_indexes
 
         self.train_X = self.X[self.initial_indexes]
         self.train_y = self.y[self.initial_indexes]
 
-        #ind = np.ones(len(self.y), dtype=bool)
-        #ind[self.initial_indexes] = False
         self.exploration_X = np.delete(self.X, self.initial_indexes, axis=0)#self.X[ind]
         self.exploration_y = np.delete(self.y, self.initial_indexes, axis=0)#self.y[ind]
 
@@ -204,8 +210,10 @@ class Iterative:
         df['y'] = self.train_y
         df.to_csv(rec_output)
 
-        for i in range(top_n):
+        for i in range(int(len(self.y)/top_n)):
             # Recommend iteratively
+            print('')
+            print(str(i)+'th Recommendation')
             pred_y = self.best_estimator.predict(self.exploration_X)
             self.top_score_index = self.get_top_index(top_n, pred_y, self.exploration_X, eval_criteria)
             self.train_X, self.exploration_X = self.parse_data(self.train_X, self.top_score_index, self.exploration_X, stacking='v')

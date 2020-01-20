@@ -94,8 +94,8 @@ def identical2mean(str_data, y):
     """
     Parameter
     ---------
-    X : array-like (n_samples, n_features)
-        The array to be unique
+    str_data : array-like of string (n_samples)
+        The entry to be unique
 
     y : array-like of shape (n_predictions)
         The array of the predictions
