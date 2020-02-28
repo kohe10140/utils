@@ -25,7 +25,7 @@ class KFoldCV:
             pb = tqdm
 
         kf = KFold(n_splits=self.k_splits, random_state=self.random_state) 
-        scores = []
+        self.scores = []
 
         for train_index, valid_index in pb(kf.split(X)):
             X_train, X_valid = X[train_index], X[valid_index]
@@ -37,6 +37,7 @@ class KFoldCV:
             self.clf.fit(X_train, y_train)
             best_estimator = self.clf.best_estimator_ 
             score = best_estimator.score(X_valid, y_valid)
-            scores.append(score)
+            self.scores.append(score)
+        
         
         return scores

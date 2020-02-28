@@ -95,7 +95,7 @@ class Iterative:
         if sym == 'min':
             self.df_pred = self.df_pred.groupby(df_pred.index).min()
         
-        self.top_score_index = eval_criteria(df_pred, top_n)
+        self.top_score_index = eval_criteria(self.df_pred, top_n)
         return self.top_score_index
 
 
@@ -150,7 +150,7 @@ class Iterative:
         self.n_initial = n_initial
 
         if initial_indexes == 'random':
-            self.initial_indexes = np.random.choice(list(set(self.df_y.index)),
+            self.initial_indexes = np.random.choice(np.unique(self.df_y.index.values),
                                                     self.n_initial,
                                                     replace=False)
         else:
@@ -168,7 +168,7 @@ class Iterative:
     def iter_recommend(self, n_initial, random_state,
                        param_grid, save_path, top_n,
                        initial_indexes='random', n_jobs=-1,
-                       eval_criteria=False, retune=False):
+                       eval_criteria=False, retune=False, dup=True):
         """
         Recommend and output the result
 
@@ -183,17 +183,19 @@ class Iterative:
 
         # Extract initial data
         self.train_index = self.initial_data(n_initial, initial_indexes, random_state)
-        self.train_x = self.df_X.loc[self.train_index].values
-        self.train_y = self.df_y.loc[self.train_index].values
-        self.best_estimator = self.learning(param_grid, x=self.train_x, y=self.train_y)
+        self.exploration_index = self.df_X.drop(self.train_index).index
+        self.train_X = self.df_X.loc[self.train_index]
+        self.train_y = self.df_y.loc[self.train_index]
+        self.best_estimator = self.learning(param_grid, X=self.train_X.values, y=self.train_y.values)
 
         rec_output = os.path.join(save_path, 'train'+'0'+'.csv')
         df = self.df.loc[self.train_index]
         df.to_csv(rec_output)
 
-        for i in range(int(len(self.df_y)/top_n)):
+        i = 0
+        #for i in range(int(len(self.df_y)/(2*top_n))):
+        while len(self.exploration_index) > 0:
             # Recommend iteratively
-            print('')
             print(str(i)+'th Recommendation')
             self.exploration_X = self.df_X.drop(self.train_index)
             pred_y = self.best_estimator.predict(self.exploration_X.values)
@@ -206,14 +208,20 @@ class Iterative:
             # Save the used estimator and recommended data
             estimators.append(self.best_estimator)
             rec_output = os.path.join(save_path, 'train'+str(i+1)+'.csv')
-            df = pd.merge(self.df_X.loc[self.train_index], self.df_y.loc[self.train_index], left_index=True, right_index=True)
-            df.to_csv(rec_output)
+            tsi = self.top_score_index
+            df = pd.merge(self.df_X.loc[tsi], self.df_y.loc[tsi], left_index=True, right_index=True)
+            if dup:
+                df = df.drop_duplicates().to_csv(rec_output)
+            else:
+                df.to_csv(rec_output)
 
-            self.train_x = self.df_X.loc[self.train_index].values
-            self.train_y = self.df_y.loc[self.train_index].values
+            self.train_X = self.df_X.loc[self.train_index]
+            self.train_y = self.df_y.loc[self.train_index]
 
             if retune:
-                self.best_estimator = self.learning(param_grid, X=self.train_X, y=self.train_y)
+                self.best_estimator = self.learning(param_grid, X=self.train_X.values, y=self.train_y.values)
+            
+            i += 1
             
         est_output = os.path.join(save_path, 'estimators.cmp')
         joblib.dump(estimators, est_output, 3)
