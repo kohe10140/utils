@@ -39,5 +39,4 @@ class KFoldCV:
             score = best_estimator.score(X_valid, y_valid)
             self.scores.append(score)
         
-        
-        return scores
+        return self.scores
