@@ -1,11 +1,13 @@
 import numpy as numpy
+import pandas as pd
 from sklearn.model_selection import GridSearchCV, KFold
 from tqdm import tqdm, tqdm_notebook
 
 class KFoldCV:
 
     def __init__(self, estimator, k_splits, param_grid, cv, scoring=None, iid=False,
-                 verbose=False, n_jobs=None, return_train_score=False, random_state=0):
+                 verbose=False, n_jobs=None, return_train_score=False, random_state=0,
+                 kfold_method='shuffle'):
         self.estimator = estimator
         self.k_splits = k_splits
         self.param_grid = param_grid
@@ -16,6 +18,7 @@ class KFoldCV:
         self.n_jobs = n_jobs
         self.return_train_score = return_train_score
         self.random_state = random_state
+        self.kfold_method = kfold_method
 
 
     def get_score(self, X, y, notebook=False):
@@ -24,7 +27,7 @@ class KFoldCV:
         else:
             pb = tqdm
 
-        kf = KFold(n_splits=self.k_splits, random_state=self.random_state) 
+        kf = KFold(n_splits=self.k_splits, random_state=self.random_state, shuffle=True)
         self.scores = []
 
         for train_index, valid_index in pb(kf.split(X)):
@@ -40,3 +43,8 @@ class KFoldCV:
             self.scores.append(score)
         
         return self.scores
+
+
+class EGridSearch:
+
+    def __init__(self, estimator, param_grid):
