@@ -48,3 +48,4 @@ class KFoldCV:
 class EGridSearch:
 
     def __init__(self, estimator, param_grid):
+        pass
